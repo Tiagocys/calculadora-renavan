@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculadora Inteligente ADL – HTML + JS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Evita zoom agressivo em inputs numéricos no iOS */
+    input { font-size: 16px; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <div class="mx-auto max-w-6xl p-4 md:p-6">
+    <header class="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold">Calculadora Inteligente ADL</h1>
+        <p class="text-sm text-gray-600">HTML + JavaScript puro (offline). Analise custo total, desconto vs. FIPE e margem.</p>
+      </div>
+      <div class="inline-flex rounded-2xl border border-gray-300 p-1 shadow-sm">
+        <button id="tabLeilaoBtn" class="rounded-xl px-3 py-2 text-sm bg-gray-900 text-white">Leilão</button>
+        <button id="tabAntesBtn" class="rounded-xl px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">Antes do Leilão (quitação)</button>
+      </div>
+    </header>
+
+    <!-- PARÂMETROS GLOBAIS -->
+    <section class="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div class="mb-3">
+        <h2 class="text-lg font-semibold">Parâmetros de Mercado</h2>
+        <p class="text-sm text-gray-500">Servem de referência para calcular desconto vs. FIPE e margem.</p>
+      </div>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div class="flex flex-col gap-1">
+          <label class="text-sm text-gray-700" for="precoFipe">Preço FIPE (opcional)</label>
+          <input id="precoFipe" class="w-full rounded-2xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-800" placeholder="Ex.: 85.000" inputmode="decimal" />
+          <p class="text-xs text-gray-500">Usado para calcular o desconto percentual versus a FIPE.</p>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm text-gray-700" for="precoRevenda">Preço de Revenda Estimado</label>
+          <input id="precoRevenda" class="w-full rounded-2xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-800" placeholder="Ex.: 78.500" inputmode="decimal" />
+          <p class="text-xs text-gray-500">Quanto você acredita vender o carro já regularizado.</p>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm text-gray-700" for="margemAlvoPct">Margem alvo (%)</label>
+          <div class="flex items-center gap-2">
+            <input id="margemAlvoPct" class="w-full rounded-2xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-800" placeholder="Ex.: 15" inputmode="decimal" />
+            <span class="text-gray-700">%</span>
+          </div>
+          <p class="text-xs text-gray-500">Lucro mínimo desejado como % do custo.</p>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm text-gray-700" for="bufferRiscoPct">Buffer de risco (%)</label>
+          <div class="flex items-center gap-2">
+            <input id="bufferRiscoPct" class="w-full rounded-2xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-800" placeholder="Ex.: 5" inputmode="decimal" />
+            <span class="text-gray-700">%</span>
+          </div>
+          <p class="text-xs text-gray-500">Reserva para imprevistos (peças, atrasos, documentação).</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODO LEILÃO -->
+    <div id="tabLeilao" class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div class="lg:col-span-2 flex flex-col gap-4">
+        <section class="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h3 class="mb-3 text-lg font-semibold">Lance e Taxas do Leilão</h3>
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div class="flex flex-col gap-1">
+              <label class="text-sm" for="lance">Lance / Preço de arremate</label>
+              <input id="lance" class="rounded-2xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-800" inputmode="decimal" />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-sm" for="taxaLeiloeiroPct">Taxa do leiloeiro (%)</label>
+              <div class="flex items-center gap-2">
+                <input id="taxaLeiloeiroPct" class="w-full rounded-2xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-800" placeholder="Ex.: 5" inputmode="decimal" />
+                <span class="text-gray-700">%</span>
+              </div>
+              <p class="text-xs text-gray-500">Geralmente entre 5% e 10%.</p>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-sm" for="taxaAdm">Taxa administrativa</label>
+              <input id="taxaAdm" class="rounded-2xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-800" inputmode="decimal" />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-sm" for="comissaoPatio">Comissão do pátio</label>
+              <input id="comissaoPatio" class="rounded-2xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-800" inputmode="decimal" />
+            </div>
+          </div>
+        </section>
+
+        <section class="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h3 class="mb-3 text-lg font-semibold">Regularização e Logística</h3>
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div class="flex flex-col gap-1"><label class="text-sm" for="ipva">IPVA em aberto</label><input id="ipva" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+            <div class="flex flex-col gap-1"><label class="text-sm" for="multas">Multas e débitos</label><input id="multas" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+            <div class="flex flex-col gap-1"><label class="text-sm" for="transferencia">Transferência Detran</label><input id="transferencia" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+            <div class="flex flex-col gap-1"><label class="text-sm" for="vistoria">Vistoria</label><input id="vistoria" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+            <div class="flex flex-col gap-1"><label class="text-sm" for="laudo">Laudo cautelar</label><input id="laudo" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+            <div class="flex flex-col gap-1"><label class="text-sm" for="guincho">Transporte/Guincho</label><input id="guincho" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+            <div class="flex flex-col gap-1"><label class="text-sm" for="mecanica">Mecânica/Peças</label><input id="mecanica" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+            <div class="flex flex-col gap-1"><label class="text-sm" for="outros">Outros custos</label><input id="outros" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- RESUMO LEILÃO -->
+      <aside class="flex flex-col gap-4">
+        <div class="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h3 class="mb-3 text-lg font-semibold">Resumo (Leilão)</h3>
+          <div class="grid grid-cols-1 gap-3">
+            <div class="rounded-2xl border border-gray-900 bg-gray-900 p-4 text-white shadow-sm">
+              <div class="text-xs uppercase tracking-wide opacity-70">Custo total</div>
+              <div id="custoTotalLeilao" class="mt-1 text-2xl font-semibold">R$ 0,00</div>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><div class="text-xs uppercase tracking-wide opacity-70">Taxa do leiloeiro (estimada)</div><div id="custoLeiloeiro" class="mt-1 text-2xl font-semibold">R$ 0,00</div></div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><div class="text-xs uppercase tracking-wide opacity-70">Buffer de risco</div><div id="bufferRisco" class="mt-1 text-2xl font-semibold">R$ 0,00</div></div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><div class="text-xs uppercase tracking-wide opacity-70">Desconto vs. FIPE</div><div id="descVsFipeL" class="mt-1 text-2xl font-semibold">—</div></div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><div class="text-xs uppercase tracking-wide opacity-70">Lucro s/ revenda</div><div id="lucroRevendaL" class="mt-1 text-2xl font-semibold">—</div></div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><div class="text-xs uppercase tracking-wide opacity-70">Custo máx. p/ margem-alvo</div><div id="custoMaxMargemL" class="mt-1 text-2xl font-semibold">—</div></div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><div class="text-xs uppercase tracking-wide opacity-70">Lance máximo p/ atingir margem</div><div id="lanceMax" class="mt-1 text-2xl font-semibold">—</div></div>
+            <div id="tagViavelL" class="rounded-2xl p-3 text-center text-sm font-medium bg-red-50 text-red-700">NÃO VIÁVEL na margem-alvo</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- MODO ANTES DO LEILÃO -->
+    <div id="tabAntes" class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3 hidden">
+      <div class="lg:col-span-2 flex flex-col gap-4">
+        <section class="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h3 class="mb-3 text-lg font-semibold">Dívida com o Banco (quitação)</h3>
+          <p class="mb-2 text-sm text-gray-500">O desconto é concedido ao devedor. Você aporta como terceiro e precisa da baixa do gravame para transferir.</p>
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div class="flex flex-col gap-1"><label class="text-sm" for="saldoDevedor">Saldo devedor atual</label><input id="saldoDevedor" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+            <div class="flex flex-col gap-1"><label class="text-sm" for="descontoDividaPct">Desconto concedido pelo banco (%)</label><div class="flex items-center gap-2"><input id="descontoDividaPct" class="w-full rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /><span class="text-gray-700">%</span></div></div>
+            <div class="flex flex-col gap-1"><label class="text-sm" for="encargosRemanescentes">Encargos/tarifas remanescentes</label><input id="encargosRemanescentes" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+            <div class="flex flex-col gap-1"><label class="text-sm" for="pagtoAoProprietario">Pagamento ao proprietário</label><input id="pagtoAoProprietario" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+          </div>
+          <div class="mt-3 rounded-2xl bg-gray-50 p-4 text-sm">
+            Paga ao banco: <strong id="valorPagoBanco">R$ 0,00</strong>
+          </div>
+        </section>
+
+        <section class="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h3 class="mb-3 text-lg font-semibold">Regularização e Logística</h3>
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div class="flex flex-col gap-1"><label class="text-sm" for="a_ipva">IPVA em aberto</label><input id="a_ipva" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+            <div class="flex flex-col gap-1"><label class="text-sm" for="a_multas">Multas e débitos</label><input id="a_multas" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+            <div class="flex flex-col gap-1"><label class="text-sm" for="a_transferencia">Transferência Detran</label><input id="a_transferencia" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+            <div class="flex flex-col gap-1"><label class="text-sm" for="a_vistoria">Vistoria</label><input id="a_vistoria" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+            <div class="flex flex-col gap-1"><label class="text-sm" for="a_laudo">Laudo cautelar</label><input id="a_laudo" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+            <div class="flex flex-col gap-1"><label class="text-sm" for="a_guincho">Transporte/Guincho</label><input id="a_guincho" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+            <div class="flex flex-col gap-1"><label class="text-sm" for="a_mecanica">Mecânica/Peças</label><input id="a_mecanica" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+            <div class="flex flex-col gap-1"><label class="text-sm" for="a_outros">Outros custos</label><input id="a_outros" class="rounded-2xl border border-gray-300 px-3 py-2" inputmode="decimal" /></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- RESUMO ANTES DO LEILÃO -->
+      <aside class="flex flex-col gap-4">
+        <div class="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h3 class="mb-3 text-lg font-semibold">Resumo (Antes do Leilão)</h3>
+          <div class="grid grid-cols-1 gap-3">
+            <div class="rounded-2xl border border-gray-900 bg-gray-900 p-4 text-white shadow-sm">
+              <div class="text-xs uppercase tracking-wide opacity-70">Custo total</div>
+              <div id="custoTotalAntes" class="mt-1 text-2xl font-semibold">R$ 0,00</div>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><div class="text-xs uppercase tracking-wide opacity-70">Desconto vs. FIPE</div><div id="descVsFipeA" class="mt-1 text-2xl font-semibold">—</div></div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><div class="text-xs uppercase tracking-wide opacity-70">Lucro s/ revenda</div><div id="lucroRevendaA" class="mt-1 text-2xl font-semibold">—</div></div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><div class="text-xs uppercase tracking-wide opacity-70">Custo máx. p/ margem-alvo</div><div id="custoMaxMargemA" class="mt-1 text-2xl font-semibold">—</div></div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><div class="text-xs uppercase tracking-wide opacity-70">Máximo a pagar ao proprietário</div><div id="maxProprietario" class="mt-1 text-2xl font-semibold">—</div></div>
+            <div id="tagViavelA" class="rounded-2xl p-3 text-center text-sm font-medium bg-red-50 text-red-700">NÃO VIÁVEL na margem-alvo</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <section class="mt-6 rounded-3xl border border-gray-200 bg-white p-5 text-sm text-gray-700">
+      <h4 class="mb-2 font-semibold">Como salvar e usar</h4>
+      <ol class="list-inside list-decimal space-y-1">
+        <li>Clique em <em>Salvar como...</em> no seu editor e grave como <strong>adl-calculadora.html</strong>.</li>
+        <li>Abra o arquivo no navegador (Chrome/Firefox/Edge). Funciona <strong>offline</strong>.</li>
+        <li>Preencha os campos; os cálculos atualizam em tempo real.</li>
+      </ol>
+      <p class="mt-2 text-xs text-gray-500">Dica: aceitamos números simples (ex.: 85000 ou 85.000,00). O formato é interpretado automaticamente.</p>
+    </section>
+  </div>
+
+  <script>
+    // ==== Helpers de moeda/percentual ====
+    const fmtBRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 });
+    function unformatBRL(v){
+      if (typeof v === 'number') return v;
+      if (!v) return 0;
+      const raw = String(v).replace(/[^0-9.,-]/g, '');
+      const normalized = raw.replace(/\./g, '').replace(',', '.');
+      const n = parseFloat(normalized);
+      return isNaN(n) ? 0 : n;
+    }
+    function pct(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+
+    // ==== Tabs ====
+    const tabLeilaoBtn = document.getElementById('tabLeilaoBtn');
+    const tabAntesBtn = document.getElementById('tabAntesBtn');
+    const tabLeilao = document.getElementById('tabLeilao');
+    const tabAntes = document.getElementById('tabAntes');
+    let modo = 'leilao';
+
+    function setTab(t){
+      modo = t;
+      const isLeilao = t === 'leilao';
+      tabLeilao.classList.toggle('hidden', !isLeilao);
+      tabAntes.classList.toggle('hidden', isLeilao);
+      tabLeilaoBtn.classList.toggle('bg-gray-900', isLeilao);
+      tabLeilaoBtn.classList.toggle('text-white', isLeilao);
+      tabAntesBtn.classList.toggle('bg-gray-900', !isLeilao);
+      tabAntesBtn.classList.toggle('text-white', !isLeilao);
+      recalc();
+    }
+    tabLeilaoBtn.addEventListener('click', () => setTab('leilao'));
+    tabAntesBtn.addEventListener('click', () => setTab('antes'));
+
+    // ==== Inputs comuns ====
+    const I = (id) => document.getElementById(id);
+    const precoFipe = I('precoFipe');
+    const precoRevenda = I('precoRevenda');
+    const margemAlvoPct = I('margemAlvoPct');
+    const bufferRiscoPct = I('bufferRiscoPct');
+
+    // ==== Inputs Leilão ====
+    const lance = I('lance');
+    const taxaLeiloeiroPct = I('taxaLeiloeiroPct');
+    const taxaAdm = I('taxaAdm');
+    const comissaoPatio = I('comissaoPatio');
+    const ipva = I('ipva');
+    const multas = I('multas');
+    const transferencia = I('transferencia');
+    const vistoria = I('vistoria');
+    const laudo = I('laudo');
+    const guincho = I('guincho');
+    const mecanica = I('mecanica');
+    const outros = I('outros');
+
+    // ==== Inputs Antes do Leilão ====
+    const saldoDevedor = I('saldoDevedor');
+    const descontoDividaPct = I('descontoDividaPct');
+    const encargosRemanescentes = I('encargosRemanescentes');
+    const pagtoAoProprietario = I('pagtoAoProprietario');
+    const a_ipva = I('a_ipva');
+    const a_multas = I('a_multas');
+    const a_transferencia = I('a_transferencia');
+    const a_vistoria = I('a_vistoria');
+    const a_laudo = I('a_laudo');
+    const a_guincho = I('a_guincho');
+    const a_mecanica = I('a_mecanica');
+    const a_outros = I('a_outros');
+
+    // ==== Saídas Leilão ====
+    const outCustoTotalLeilao = I('custoTotalLeilao');
+    const outCustoLeiloeiro = I('custoLeiloeiro');
+    const outBufferRisco = I('bufferRisco');
+    const outDescVsFipeL = I('descVsFipeL');
+    const outLucroRevendaL = I('lucroRevendaL');
+    const outCustoMaxMargemL = I('custoMaxMargemL');
+    const outLanceMax = I('lanceMax');
+    const tagViavelL = I('tagViavelL');
+
+    // ==== Saídas Antes do Leilão ====
+    const outCustoTotalAntes = I('custoTotalAntes');
+    const outValorPagoBanco = I('valorPagoBanco');
+    const outDescVsFipeA = I('descVsFipeA');
+    const outLucroRevendaA = I('lucroRevendaA');
+    const outCustoMaxMargemA = I('custoMaxMargemA');
+    const outMaxProprietario = I('maxProprietario');
+    const tagViavelA = I('tagViavelA');
+
+    // ==== Lógica de cálculo ====
+    function toNum(el){ return unformatBRL(el.value); }
+
+    function descontoVsFipe(custo, fipe){
+      if (!custo || !fipe) return null;
+      const diff = fipe - custo;
+      return { valor: diff, pct: (diff / fipe) * 100 };
+    }
+
+    function lucroROI(custo, revenda){
+      if (!custo || !revenda) return null;
+      const lucro = revenda - custo;
+      return { valor: lucro, pct: (lucro / custo) * 100 };
+    }
+
+    function custoMaxParaMargem(revenda, margem){
+      if (!revenda || !margem) return null;
+      return revenda / (1 + margem / 100);
+    }
+
+    function recalc(){
+      const fipe = toNum(precoFipe);
+      const revenda = toNum(precoRevenda);
+      const margem = pct(margemAlvoPct.value || 0);
+      const bufferPct = pct(bufferRiscoPct.value || 0) / 100;
+
+      if (modo === 'leilao'){
+        const L = toNum(lance);
+        const taxa = pct(taxaLeiloeiroPct.value || 0) / 100;
+        const fixos = toNum(taxaAdm) + toNum(comissaoPatio) + toNum(ipva) + toNum(multas) + toNum(transferencia) + toNum(vistoria) + toNum(laudo) + toNum(guincho) + toNum(mecanica) + toNum(outros);
+        const custoLeiloeiro = L * taxa;
+        const baseBuffer = L + custoLeiloeiro + toNum(taxaAdm) + toNum(comissaoPatio);
+        const buffer = baseBuffer * bufferPct;
+        const custoTotal = L + custoLeiloeiro + fixos + buffer;
+
+        outCustoTotalLeilao.textContent = fmtBRL.format(custoTotal);
+        outCustoLeiloeiro.textContent = fmtBRL.format(custoLeiloeiro);
+        outBufferRisco.textContent = fmtBRL.format(buffer);
+
+        const dvf = descontoVsFipe(custoTotal, fipe);
+        outDescVsFipeL.textContent = dvf ? `${fmtBRL.format(dvf.valor)} (${dvf.pct.toFixed(1)}%)` : '—';
+
+        const lroi = lucroROI(custoTotal, revenda);
+        outLucroRevendaL.textContent = lroi ? `${fmtBRL.format(lroi.valor)} (${lroi.pct.toFixed(1)}% ROI)` : '—';
+
+        const cMax = custoMaxParaMargem(revenda, margem);
+        outCustoMaxMargemL.textContent = cMax ? fmtBRL.format(cMax) : '—';
+
+        // Iteração para lance máximo
+        let Lopt = 0;
+        if (cMax){
+          const adm = toNum(taxaAdm); const patio = toNum(comissaoPatio);
+          for (let i=0;i<8;i++){
+            const custoVar = Lopt * (1 + taxa);
+            const buf = (Lopt + (Lopt*taxa) + adm + patio) * bufferPct;
+            const custo = custoVar + (fixos) + buf;
+            const erro = cMax - custo;
+            Lopt += erro * 0.8;
+            if (Math.abs(erro) < 1) break;
+          }
+        }
+        outLanceMax.textContent = cMax ? fmtBRL.format(Math.max(0, Lopt)) : '—';
+
+        const viavel = cMax ? (custoTotal <= cMax) : null;
+        if (viavel === null){ tagViavelL.textContent = '—'; tagViavelL.className = 'rounded-2xl p-3 text-center text-sm font-medium bg-yellow-50 text-yellow-700'; }
+        else if (viavel){ tagViavelL.textContent = 'VIÁVEL na margem-alvo'; tagViavelL.className = 'rounded-2xl p-3 text-center text-sm font-medium bg-green-50 text-green-700'; }
+        else { tagViavelL.textContent = 'NÃO VIÁVEL na margem-alvo'; tagViavelL.className = 'rounded-2xl p-3 text-center text-sm font-medium bg-red-50 text-red-700'; }
+      }
+
+      if (modo === 'antes'){
+        const saldo = toNum(saldoDevedor);
+        const descPct = pct(descontoDividaPct.value || 0)/100;
+        const enc = toNum(encargosRemanescentes);
+        const pagaBanco = Math.max(saldo - (saldo*descPct), 0) + enc;
+        outValorPagoBanco.textContent = fmtBRL.format(pagaBanco);
+
+        const custos = toNum(a_ipva)+toNum(a_multas)+toNum(a_transferencia)+toNum(a_vistoria)+toNum(a_laudo)+toNum(a_guincho)+toNum(a_mecanica)+toNum(a_outros);
+        const pagaProprietario = toNum(pagtoAoProprietario);
+        const custoTotal = pagaBanco + pagaProprietario + custos;
+
+        outCustoTotalAntes.textContent = fmtBRL.format(custoTotal);
+        const dvf = descontoVsFipe(custoTotal, fipe);
+        outDescVsFipeA.textContent = dvf ? `${fmtBRL.format(dvf.valor)} (${dvf.pct.toFixed(1)}%)` : '—';
+        const lroi = lucroROI(custoTotal, revenda);
+        outLucroRevendaA.textContent = lroi ? `${fmtBRL.format(lroi.valor)} (${lroi.pct.toFixed(1)}% ROI)` : '—';
+        const cMax = custoMaxParaMargem(revenda, margem);
+        outCustoMaxMargemA.textContent = cMax ? fmtBRL.format(cMax) : '—';
+
+        const fixos = pagaBanco + custos;
+        const maxProprietario = cMax ? Math.max(0, cMax - fixos) : null;
+        outMaxProprietario.textContent = (maxProprietario !== null) ? fmtBRL.format(maxProprietario) : '—';
+
+        const viavel = cMax ? (custoTotal <= cMax) : null;
+        if (viavel === null){ tagViavelA.textContent = '—'; tagViavelA.className = 'rounded-2xl p-3 text-center text-sm font-medium bg-yellow-50 text-yellow-700'; }
+        else if (viavel){ tagViavelA.textContent = 'VIÁVEL na margem-alvo'; tagViavelA.className = 'rounded-2xl p-3 text-center text-sm font-medium bg-green-50 text-green-700'; }
+        else { tagViavelA.textContent = 'NÃO VIÁVEL na margem-alvo'; tagViavelA.className = 'rounded-2xl p-3 text-center text-sm font-medium bg-red-50 text-red-700'; }
+      }
+    }
+
+    // Recalcula em tempo real
+    document.querySelectorAll('input').forEach(el => {
+      el.addEventListener('input', recalc);
+    });
+
+    // Defaults úteis
+    taxaLeiloeiroPct.value = '5';
+    margemAlvoPct.value = '15';
+    bufferRiscoPct.value = '5';
+
+    recalc();
+  </script>
+</body>
+</html>
